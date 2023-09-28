@@ -34,7 +34,7 @@ with open('discordToken.txt', 'r') as file:
 with open('YouTubeV3Token.txt', 'r') as file:
     dvKey = file.read().replace('\n', '')
 
-MIN_FILE_SIZE = 10 * 1024
+MIN_FILE_SIZE = 80 * 1024
 
 
 async def finished_callback(sink: MP3Sink, channel: discord.TextChannel, filename: str = "test.wav"):
