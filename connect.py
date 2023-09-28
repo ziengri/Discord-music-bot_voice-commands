@@ -182,32 +182,38 @@ async def check_voice_channels():
                         return [f'https://www.youtube.com/watch?v={video_id}' for video_id in video_ids]
 
                     video_urls = search_video(query)
+                    print(video_urls)
+                    if video_urls:
 
-                    ydl_opts = {
-                        'format': 'bestaudio/best',
-                        'postprocessors': [{
-                            'key': 'FFmpegExtractAudio',
-                            'preferredcodec': 'mp3',
-                            'preferredquality': '192',
-                        }],
-                        'extractor_retries': 'auto',
-                    }
-
-                    random_video_url = random.choice(video_urls)  # случайный URL из списка
-
-                    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                        info = ydl.extract_info(random_video_url, download=False)
-                        url = info['formats'][0]['url']
-
-                        options = {
-                            'options': '-vn',
-                            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+                        ydl_opts = {
+                            'format': 'bestaudio/best',
+                            'postprocessors': [{
+                                'key': 'FFmpegExtractAudio',
+                                'preferredcodec': 'mp3',
+                                'preferredquality': '192',
+                            }],
+                            'extractor_retries': 'auto',
                         }
 
-                        source = discord.FFmpegPCMAudio(url, **options)
-                        source = discord.PCMVolumeTransformer(source, volume=0.06) #you can change volume (default 1.0)
-                        vc = voice_client
-                        vc.play(source)
+                        random_video_url = random.choice(video_urls)  # случайный URL из списка
+
+                        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                            info = ydl.extract_info(random_video_url, download=False)
+                            url = info['formats'][0]['url']
+
+                            options = {
+                                'options': '-vn',
+                                'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+                            }
+
+                            source = discord.FFmpegPCMAudio(url, **options)
+                            source = discord.PCMVolumeTransformer(source, volume=0.06) #you can change volume (default 1.0)
+                            vc = voice_client
+                            time.sleep(0.1)
+                            vc.play(source)
+                    else:
+                        print("Пустой список")
+                        pass
                         
 
 
@@ -415,3 +421,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
