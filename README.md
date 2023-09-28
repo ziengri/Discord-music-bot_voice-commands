@@ -3,7 +3,7 @@ open for branching
 
 ## 📝 Tutorial
 
-get the Google Cloud v3 key, install the necessary libraries, add your mp3 voice commands (answer.mp3,song.mp3)
+get the Google Cloud v3 key, install the necessary libraries, add your voice commands (answer.mp3,song.mp3)
 
 ## Run the project
 
