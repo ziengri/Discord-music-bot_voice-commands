@@ -34,6 +34,8 @@ with open('discordToken.txt', 'r') as file:
 with open('YouTubeV3Token.txt', 'r') as file:
     dvKey = file.read().replace('\n', '')
 
+MIN_FILE_SIZE = 10 * 1024
+
 
 async def finished_callback(sink: MP3Sink, channel: discord.TextChannel, filename: str = "test.wav"):
     mention_strs = []
@@ -124,7 +126,7 @@ async def check_voice_channels():
                         if path_p.is_file():
                             os.rename(path_p, "startplaying.wav")
             voice_client.play(source, after=after_playing)
-            time.sleep(1)
+            time.sleep(0.5)
             vc = bot.voice_clients[0] if bot.voice_clients else None
             if vc:
                 print("Запись запроса музыки (5sec)")
@@ -137,87 +139,91 @@ async def check_voice_channels():
                     
                 )
                 time.sleep(5)
-                print("stop recording (test.wav)")
-                vc.stop_recording()
-                
-                time.sleep(1)
+                print("stop recording (song.wav)")
+                vc.stop_recording()   
 
         SONG_FILE_PATH = Path("song.wav")
 
         if SONG_FILE_PATH.is_file():
-            print("преобразование запроса музыки") # music request conversion
-            r = sr.Recognizer()
-            try:
-                with sr.AudioFile(SONG_FILE_PATH.resolve().as_posix()) as source:
-                    audio = r.record(source)
-                
-                text = r.recognize_google(audio, language="ru-RU") # change to your language
-                print(text)
-
-                time.sleep(1)
-
-                query = text
+            if os.path.getsize(SONG_FILE_PATH) <= MIN_FILE_SIZE:
                 os.remove(SONG_FILE_PATH)
                 os.remove(Path("startplaying.wav"))
-                
-                # поиск через googleapi (search via google api) - need key
+                pass
+            else:
+                print("преобразование запроса музыки") # music request conversion
+                r = sr.Recognizer()
+                try:
+                    with sr.AudioFile(SONG_FILE_PATH.resolve().as_posix()) as source:
+                        audio = r.record(source)
+                    
+                    text = r.recognize_google(audio, language="ru-RU") # change to your language
+                    print(text)
 
-                def search_video(query):
-                    youtube = build('youtube', 'v3', developerKey=dvKey)
-                    request = youtube.search().list(
-                        q=query,
-                        part='id',
-                        maxResults=3,  # количество результатов (number of results per request)
-                        type='video',
-                        # videoDuration='short'  # длительность музыки (duration of found music)
-                    )
-                    response = request.execute()
-                    video_ids = [item['id']['videoId'] for item in response['items']]
-                    random.shuffle(video_ids)  # перемешать
-                    return [f'https://www.youtube.com/watch?v={video_id}' for video_id in video_ids]
+                    # time.sleep(0.5)
 
-                video_urls = search_video(query)
+                    query = text
+                    os.remove(SONG_FILE_PATH)
+                    os.remove(Path("startplaying.wav"))
+                    
+                    # поиск через googleapi (search via google api) - need key
 
-                ydl_opts = {
-                    'format': 'bestaudio/best',
-                    'postprocessors': [{
-                        'key': 'FFmpegExtractAudio',
-                        'preferredcodec': 'mp3',
-                        'preferredquality': '192',
-                    }],
-                    'extractor_retries': 'auto',
-                }
+                    def search_video(query):
+                        youtube = build('youtube', 'v3', developerKey=dvKey)
+                        request = youtube.search().list(
+                            q=query,
+                            part='id',
+                            maxResults=3,  # количество результатов (number of results per request)
+                            type='video',
+                            # videoDuration='short'  # длительность музыки (duration of found music)
+                        )
+                        response = request.execute()
+                        video_ids = [item['id']['videoId'] for item in response['items']]
+                        random.shuffle(video_ids)  # перемешать
+                        return [f'https://www.youtube.com/watch?v={video_id}' for video_id in video_ids]
 
-                random_video_url = random.choice(video_urls)  # случайный URL из списка
+                    video_urls = search_video(query)
 
-                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(random_video_url, download=False)
-                    url = info['formats'][0]['url']
-
-                    options = {
-                        'options': '-vn',
-                        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+                    ydl_opts = {
+                        'format': 'bestaudio/best',
+                        'postprocessors': [{
+                            'key': 'FFmpegExtractAudio',
+                            'preferredcodec': 'mp3',
+                            'preferredquality': '192',
+                        }],
+                        'extractor_retries': 'auto',
                     }
 
-                    source = discord.FFmpegPCMAudio(url, **options)
-                    source = discord.PCMVolumeTransformer(source, volume=0.06) #you can change volume (default 1.0)
-                    vc = voice_client
-                    vc.play(source)
-                    
+                    random_video_url = random.choice(video_urls)  # случайный URL из списка
 
+                    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                        info = ydl.extract_info(random_video_url, download=False)
+                        url = info['formats'][0]['url']
 
-            except (TypeError, sr.UnknownValueError, sr.RequestError) as e:
-                if isinstance(e, TypeError):
-                    print("Ошибка чтения аудиофайла")
-                elif isinstance(e, sr.UnknownValueError):
-                    print("Ошибка распознавания речи")
-                elif isinstance(e, sr.RequestError):
-                    print("Ошибка соединения с сервисом распознавания речи")
-                text = ""
-                os.remove(SONG_FILE_PATH)
+                        options = {
+                            'options': '-vn',
+                            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+                        }
+
+                        source = discord.FFmpegPCMAudio(url, **options)
+                        source = discord.PCMVolumeTransformer(source, volume=0.06) #you can change volume (default 1.0)
+                        vc = voice_client
+                        vc.play(source)
                         
 
-            await asyncio.sleep(0.5)
+
+                except (TypeError, sr.UnknownValueError, sr.RequestError) as e:
+                    if isinstance(e, TypeError):
+                        print("Ошибка чтения аудиофайла")
+                    elif isinstance(e, sr.UnknownValueError):
+                        print("Ошибка распознавания речи")
+                    elif isinstance(e, sr.RequestError):
+                        print("Ошибка соединения с сервисом распознавания речи")
+                    text = ""
+                    os.remove(SONG_FILE_PATH)
+                    os.remove(Path("startplaying.wav"))
+                            
+
+                await asyncio.sleep(0.5)
 
             
 # вызвать комманду (call command)
@@ -286,8 +292,9 @@ async def transcribe_audio():
     text = ""
 
     while True:
-        if AUDIO_FILE_PATH.is_file():
+        if AUDIO_FILE_PATH.is_file() and os.path.getsize(AUDIO_FILE_PATH) >= MIN_FILE_SIZE:
             print("преобразование запроса")
+            print(os.path.getsize(AUDIO_FILE_PATH))
             r = sr.Recognizer()
             try:
                 with sr.AudioFile(AUDIO_FILE_PATH.resolve().as_posix()) as source:
@@ -316,7 +323,7 @@ async def transcribe_audio():
                 text = ""
                 os.remove(AUDIO_FILE_PATH)
 
-        elif ANSWER_FILE_PATH.is_file():
+        elif ANSWER_FILE_PATH.is_file() and os.path.getsize(ANSWER_FILE_PATH) >= MIN_FILE_SIZE:
             print("преобразование вопроса...")
             r = sr.Recognizer()
             try:
@@ -344,6 +351,14 @@ async def transcribe_audio():
                     print("Ошибка соединения с сервисом распознавания речи")
                 text = ""
                 os.remove(ANSWER_FILE_PATH)
+
+        else:
+            if AUDIO_FILE_PATH.is_file():
+                if os.path.getsize(AUDIO_FILE_PATH) < MIN_FILE_SIZE:
+                    os.remove(AUDIO_FILE_PATH)
+            if ANSWER_FILE_PATH.is_file():
+                if os.path.getsize(ANSWER_FILE_PATH) < MIN_FILE_SIZE:
+                    os.remove(ANSWER_FILE_PATH)
 
 
 
