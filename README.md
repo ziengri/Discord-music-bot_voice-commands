@@ -7,7 +7,7 @@ get the Google Cloud v3 key, install the necessary libraries, add your mp3 voice
 
 ## Run the project
 
-[![Run](Just connect.py)
+[Run](Just connect.py)
 
 
 > **Note:** 
