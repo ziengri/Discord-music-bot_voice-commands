@@ -1,13 +1,14 @@
 <p align="center">Terrible, but it works!</p>
-open for branching
+open for branching.
 
 ## 📝 Tutorial
 
-get the Google Cloud v3 key, install the necessary libraries, add your voice commands (answer.mp3,song.mp3)
+get the Google Cloud v3 key, install the necessary libraries, add your voice commands (answer.mp3,song.mp3).
+you can also use the version without restrictions api google(connect-.py).
 
 ## Run the project
 
-Just connect.py
+Just connect.py or connect-.py
 
 
 > **Note:** 
